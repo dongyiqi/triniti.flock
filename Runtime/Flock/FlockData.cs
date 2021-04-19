@@ -6,8 +6,7 @@ namespace Triniti.Flock
     public struct FlockSteerData : IComponentData
     {
         public float2 Position;
-        //public float2 Forward => math.normalizesafe(Velocity);
-        //steer read only
+         //steer read only
         public float2 Velocity;
         //steer write
         public float2 Steer;
@@ -21,7 +20,6 @@ namespace Triniti.Flock
     {
         public float2 Goal;
         public float ArriveRadius;
-        public float ForceStopRange;
     }
     
 

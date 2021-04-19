@@ -6,7 +6,7 @@ using Unity.Transforms;
 namespace Triniti.Flock
 {
     [UpdateInGroup(typeof(FlockGroup)), UpdateBefore(typeof(FlockSystem))]
-    public class FlockNeighborBruteForceSystem : SystemBase
+    public class NeighborBruteForceSystem : SystemBase
     {
         private EntityQuery _flockEntityQuery;
 
@@ -35,7 +35,7 @@ namespace Triniti.Flock
 
             Entities.WithName("BruteForceCalcNeighborsJob").WithReadOnly(flockEntityFilters).WithReadOnly(flockEntityPositions)
                 .WithReadOnly(flockEntityVelocity).ForEach((int entityInQueryIndex, ref FlockNeighborsData flockNeighborsData,
-                    in FlockEntityData flockEntityData, in LocalToWorld localToWorld) =>
+                    in FlockSteerData flockSteerData, in FlockEntityData flockEntityData, in LocalToWorld localToWorld) =>
                 {
                     var checkPosition = localToWorld.Position.xz;
                     var position = float2.zero;
@@ -65,14 +65,15 @@ namespace Triniti.Flock
                             separation += (checkPosition - neighborPosition) / distanceSq;
                         }
                     }
-
+                    
                     //remove self
                     flockNeighborsData.NeighborCount = neighborsCount;
                     if (neighborsCount > 0)
                     {
                         flockNeighborsData.MeanPosition = position / neighborsCount;
                         flockNeighborsData.MeanVelocity = velocity / neighborsCount;
-                        flockNeighborsData.SeparationVector = separation;
+                        flockNeighborsData.SeparationVector = math.normalizesafe(separation) *
+                                      math.min(math.length(separation), flockSteerData.MaxForce);
                     }
                 })
                 .ScheduleParallel();

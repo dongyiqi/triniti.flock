@@ -59,17 +59,12 @@ namespace Triniti.Flock
             var driveJobHandle = Entities.WithName("DriveJob").ForEach(
                 (int entityInQueryIndex, ref FlockSteerData flockSteerData) =>
                 {
-                    var combinedSteering = flockSetting.CohesionWeight * cohesionArray[entityInQueryIndex]
-                                           + flockSetting.AlignmentWeight * alignmentArray[entityInQueryIndex]
-                                           + flockSetting.SeparationWeight * separationArray[entityInQueryIndex]
-                                           + flockSetting.SteerWeight * flockSteerData.Steer;
-                    //+ flockSetting.GuideWeight * steerArray[entityInQueryIndex];
-                    //temp hack
-                    //flockSteerData.Forward = math.normalizesafe(flockSteerData.Velocity);
+                    //steer is the normalized value and should not time weight(for arrive behaviour)
+                    var combinedSteering = flockSteerData.Steer;
+                    combinedSteering += flockSetting.CohesionWeight * cohesionArray[entityInQueryIndex]
+                                        + flockSetting.AlignmentWeight * alignmentArray[entityInQueryIndex]
+                                        + flockSetting.SeparationWeight * separationArray[entityInQueryIndex];
 
-                    //move along forward and lerp forward
-                    //var curForward = math.normalizesafe(flockSteerData.Velocity);
-                    //var nextForward = math.normalizesafe(curForward+ flockSteerData.RotateSpeed * deltaTime * (combinedSteering - curForward));
                     combinedSteering = math.normalizesafe(combinedSteering) *
                                        math.min(math.length(combinedSteering), flockSteerData.MaxForce);
 
