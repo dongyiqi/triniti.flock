@@ -24,23 +24,22 @@ namespace Triniti.Flock
             var flockCount = _flockEntityQuery.CalculateEntityCount();
             var flockEntityFilters = new NativeArray<byte>(flockCount, Allocator.TempJob);
             var flockEntityPositions = new NativeArray<float2>(flockCount, Allocator.TempJob);
-            var flockEntityForwards = new NativeArray<float2>(flockCount, Allocator.TempJob);
+            var flockEntityVelocity = new NativeArray<float2>(flockCount, Allocator.TempJob);
             Entities.WithName("BruteForceInitializeJob").WithAll<FlockNeighborsData>()
-                .ForEach((int entityInQueryIndex, in FlockEntityData flockEntityData, in LocalToWorld localToWorld) =>
+                .ForEach((int entityInQueryIndex, in FlockEntityData flockEntityData, in FlockSteerData flockSteerData) =>
                 {
                     flockEntityFilters[entityInQueryIndex] = flockEntityData.Filter;
-                    flockEntityPositions[entityInQueryIndex] = localToWorld.Position.xz;
-                    flockEntityForwards[entityInQueryIndex] = localToWorld.Forward.xz;
+                    flockEntityPositions[entityInQueryIndex] = flockSteerData.Position;
+                    flockEntityVelocity[entityInQueryIndex] = flockSteerData.Velocity;
                 }).ScheduleParallel();
 
             Entities.WithName("BruteForceCalcNeighborsJob").WithReadOnly(flockEntityFilters).WithReadOnly(flockEntityPositions)
-                .WithReadOnly(flockEntityForwards)
-                .ForEach((int entityInQueryIndex, ref FlockNeighborsData flockNeighborsData, in FlockEntityData flockEntityData,
-                    in LocalToWorld localToWorld) =>
+                .WithReadOnly(flockEntityVelocity).ForEach((int entityInQueryIndex, ref FlockNeighborsData flockNeighborsData,
+                    in FlockEntityData flockEntityData, in LocalToWorld localToWorld) =>
                 {
                     var checkPosition = localToWorld.Position.xz;
                     var position = float2.zero;
-                    var forward = float2.zero;
+                    var velocity = float2.zero;
                     var neighborRadiusSq = flockEntityData.NeighborRadius * flockEntityData.NeighborRadius;
                     var separationRadiusSq = flockEntityData.SeparationRadius * flockEntityData.SeparationRadius;
                     var neighborsCount = 0;
@@ -51,18 +50,19 @@ namespace Triniti.Flock
 
                         var neighborPosition = flockEntityPositions[i];
                         if (flockEntityData.Filter != flockEntityFilters[i]) continue;
-                        var distance = math.distancesq(neighborPosition, checkPosition);
-                        if (distance < neighborRadiusSq)
+                        var distanceSq = math.distancesq(neighborPosition, checkPosition);
+                        if (distanceSq < neighborRadiusSq)
                         {
                             neighborsCount++;
                             position += neighborPosition;
-                            forward += flockEntityForwards[i];
+                            velocity += flockEntityVelocity[i];
                         }
 
-
-                        if (distance < separationRadiusSq)
+                        //互斥和距离成反比 normalized dir = (checkPosition - neighborPosition) / distance
+                        // normalized dir / distance = (checkPosition - neighborPosition) / distancesq
+                        if (distanceSq < separationRadiusSq)
                         {
-                            separation += (checkPosition - neighborPosition);
+                            separation += (checkPosition - neighborPosition) / distanceSq;
                         }
                     }
 
@@ -70,8 +70,8 @@ namespace Triniti.Flock
                     flockNeighborsData.NeighborCount = neighborsCount;
                     if (neighborsCount > 0)
                     {
-                        flockNeighborsData.AveragePosition = position / neighborsCount;
-                        flockNeighborsData.AverageForward = forward / neighborsCount;
+                        flockNeighborsData.MeanPosition = position / neighborsCount;
+                        flockNeighborsData.MeanVelocity = velocity / neighborsCount;
                         flockNeighborsData.SeparationVector = separation;
                     }
                 })
@@ -79,7 +79,7 @@ namespace Triniti.Flock
 
             flockEntityFilters.Dispose(Dependency);
             flockEntityPositions.Dispose(Dependency);
-            flockEntityForwards.Dispose(Dependency);
+            flockEntityVelocity.Dispose(Dependency);
         }
     }
 }
