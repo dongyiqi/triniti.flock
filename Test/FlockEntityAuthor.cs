@@ -5,34 +5,49 @@ using Triniti.Flock;
 using Unity.Mathematics;
 using Unity.Transforms;
 
-public class FlockEntityAuthor : MonoBehaviour, IConvertGameObjectToEntity
+namespace Triniti.Flock.Test
 {
-    [SerializeField] private float SeparationRadius = 1;
-    [SerializeField] private float NeighborRadius = 5;
-    [SerializeField] private float MaxSpeed = 1;
-    [SerializeField] private byte _filter = 0;
-    public static List<Entity> FlockEntityList = new List<Entity>();
-
-    public void Convert(Entity entity, EntityManager dstManager, GameObjectConversionSystem conversionSystem)
+    public class FlockEntityAuthor : MonoBehaviour, IConvertGameObjectToEntity
     {
-        FlockEntityList.Add(entity);
+        [SerializeField] public float SeparationRadius = 1;
+        [SerializeField] public float NeighborRadius = 5;
+        [SerializeField] public float MaxPower = 1;
+        [SerializeField] public float MaxSpeed = 5;
+        [SerializeField] public byte _filter = 0;
+        public static List<Entity> FlockEntityList = new List<Entity>();
 
-        dstManager.AddComponentData(entity, new FlockEntityData
+        public void Convert(Entity entity, EntityManager dstManager, GameObjectConversionSystem conversionSystem)
         {
-            SeparationRadius = SeparationRadius,
-            MaxSpeed = MaxSpeed,
-            Filter = _filter,
-            NeighborRadius = NeighborRadius,
-        });
-        dstManager.AddComponent<FlockNeighborsData>(entity);
-        var position = transform.position;
-        dstManager.AddComponentData(entity, new FlockNavigationData
-        {
-            Destination = new float2(position.x, position.z)
-        });
-        dstManager.SetComponentData(entity, new LocalToWorld
-        {
-            Value = float4x4.TRS(transform.position, transform.rotation, new float3(1, 1, 1))
-        });
+            FlockEntityList.Add(entity);
+            float3 position = transform.position;
+            dstManager.AddComponentData(entity, new FlockEntityData
+            {
+                SeparationRadius = SeparationRadius,
+                Filter = _filter,
+                NeighborRadius = NeighborRadius,
+            });
+            dstManager.AddComponentData(entity, new TransformData
+            {
+                Position = new float2(position.x, position.y),
+            });
+            dstManager.AddComponentData(entity, new SteerData
+            {
+                //Position = new float2(position.x, position.y),
+                Velocity = math.forward(transform.rotation).xz * Math.Constants.EPSILON,
+                MaxSpeed = MaxSpeed,
+                MaxForce = MaxPower,
+            });
+            dstManager.AddComponent<FlockNeighborsData>(entity);
+
+            dstManager.AddComponentData(entity, new SteerArriveData
+            {
+                Goal = new float2(position.x, position.z),
+                ArriveRadius = 1,
+            });
+            dstManager.SetComponentData(entity, new LocalToWorld
+            {
+                Value = float4x4.TRS(position, transform.rotation, new float3(1, 1, 1))
+            });
+        }
     }
 }

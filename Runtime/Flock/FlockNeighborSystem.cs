@@ -26,16 +26,17 @@ namespace Triniti.Flock
             var flockEntityPositions = new NativeArray<float2>(flockCount, Allocator.TempJob);
             var flockEntityVelocity = new NativeArray<float2>(flockCount, Allocator.TempJob);
             Entities.WithName("BruteForceInitializeJob").WithAll<FlockNeighborsData>()
-                .ForEach((int entityInQueryIndex, in FlockEntityData flockEntityData, in FlockSteerData flockSteerData) =>
+                .ForEach((int entityInQueryIndex, in FlockEntityData flockEntityData, in SteerData steerData,
+                    in TransformData transformData) =>
                 {
                     flockEntityFilters[entityInQueryIndex] = flockEntityData.Filter;
-                    flockEntityPositions[entityInQueryIndex] = flockSteerData.Position;
-                    flockEntityVelocity[entityInQueryIndex] = flockSteerData.Velocity;
+                    flockEntityPositions[entityInQueryIndex] = transformData.Position;
+                    flockEntityVelocity[entityInQueryIndex] = steerData.Velocity;
                 }).ScheduleParallel();
 
             Entities.WithName("BruteForceCalcNeighborsJob").WithReadOnly(flockEntityFilters).WithReadOnly(flockEntityPositions)
                 .WithReadOnly(flockEntityVelocity).ForEach((int entityInQueryIndex, ref FlockNeighborsData flockNeighborsData,
-                    in FlockSteerData flockSteerData, in FlockEntityData flockEntityData, in LocalToWorld localToWorld) =>
+                    in SteerData flockSteerData, in FlockEntityData flockEntityData, in LocalToWorld localToWorld) =>
                 {
                     var checkPosition = localToWorld.Position.xz;
                     var position = float2.zero;
@@ -65,7 +66,7 @@ namespace Triniti.Flock
                             separation += (checkPosition - neighborPosition) / distanceSq;
                         }
                     }
-                    
+
                     //remove self
                     flockNeighborsData.NeighborCount = neighborsCount;
                     if (neighborsCount > 0)
@@ -73,7 +74,7 @@ namespace Triniti.Flock
                         flockNeighborsData.MeanPosition = position / neighborsCount;
                         flockNeighborsData.MeanVelocity = velocity / neighborsCount;
                         flockNeighborsData.SeparationVector = math.normalizesafe(separation) *
-                                      math.min(math.length(separation), flockSteerData.MaxForce);
+                                                              math.min(math.length(separation), flockSteerData.MaxForce);
                     }
                 })
                 .ScheduleParallel();

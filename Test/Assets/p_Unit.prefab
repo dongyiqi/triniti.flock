@@ -11,8 +11,8 @@ GameObject:
   - component: {fileID: 7674873271096834958}
   - component: {fileID: 1913813294277763678}
   - component: {fileID: 6638614324294490383}
-  - component: {fileID: 2830253909960939291}
   - component: {fileID: 6838997862951602314}
+  - component: {fileID: -2837878474653380651}
   m_Layer: 0
   m_Name: p_Unit
   m_TagString: Untagged
@@ -27,13 +27,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2005587061574812918}
-  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &1913813294277763678
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -41,7 +41,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2005587061574812918}
-  m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 4300000, guid: 62bb30557a0af6f4382acad5784d8f39, type: 2}
 --- !u!23 &6638614324294490383
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -83,19 +83,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &2830253909960939291
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2005587061574812918}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea7d7495833204790ba1d3a8755397f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ConversionMode: 0
 --- !u!114 &6838997862951602314
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -108,7 +95,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d1950c10a403e041a38193e1e333f30, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SeparationRadius: 1
+  SeparationRadius: 0.5
   NeighborRadius: 5
-  MaxSpeed: 1
+  MaxPower: 5
+  MaxSpeed: 5
   _filter: 0
+--- !u!114 &-2837878474653380651
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2005587061574812918}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea7d7495833204790ba1d3a8755397f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ConversionMode: 0

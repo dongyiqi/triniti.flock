@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace Triniti.Flock.Test
@@ -17,6 +18,11 @@ namespace Triniti.Flock.Test
                 var rotation = Quaternion.Euler(0, Random.Range(0, 360f), 0);
                 Instantiate(FlockEnity, position, rotation);
             }
+        }
+
+        private void OnDrawGizmos()
+        {
+            
         }
     }
 }
