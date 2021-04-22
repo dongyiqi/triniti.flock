@@ -91,6 +91,7 @@ namespace Triniti.Flock.Test
                     var world = World.DefaultGameObjectInjectionWorld;
                     var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
                     _curForward = math.normalizesafe(position - _curDestination);
+                    //_curForward = new float2(1, 0);
                     _curDestination = position;
                     entityManager.AddComponentData(_groupEntity, new GroupMoveData
                     {

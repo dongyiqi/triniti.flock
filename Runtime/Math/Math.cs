@@ -11,11 +11,12 @@ namespace Triniti.Flock
             public const float EPSILON = 0.0001f;
         }
 
-        //f should be the normalized
+        //f should be the normalized float(0,1) equal theta 0
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float3x3 TrsFloat3x3(float2 t, float2 f) //p:point f:forward
         {
-            var theta = math.atan2(f.y, f.x);
+            
+            var theta = math.atan2(f.x, f.y);
             return TrsFloat3x3(t, theta);
             return new float3x3(
                 new float3(f.x, f.y, 0),
@@ -30,8 +31,8 @@ namespace Triniti.Flock
             math.sincos(r, out var sin, out var cos);
 
             return new float3x3(
-                new float3(cos, sin, 0),
-                new float3(-sin, cos, 0),
+                new float3(cos, -sin, 0),
+                new float3(sin, cos, 0),
                 new float3(t.x, t.y, 1));
         }
     }

@@ -8,7 +8,9 @@ namespace Triniti.Flock
     public struct MemberSortData
     {
         public Entity Entity;
+
         public float2 Position;
+        public float Distance;
     }
 
     public class GroupMoveSystem : SystemBase
@@ -24,10 +26,18 @@ namespace Triniti.Flock
         //TODO:generate flow field data
         //TODO:update formation index by current members position and destination position
 
+        public struct FormationMemberSortDistance : IComparer<MemberSortData>
+        {
+            public int Compare(MemberSortData a, MemberSortData b)
+            {
+                return (int) math.round((a.Distance - b.Distance) * 100);
+            }
+        }
 
         protected override void OnUpdate()
         {
             var memberSorter = GroupFormation.FormationMemberSortInstance;
+            //var memberSorter = new FormationMemberSortDistance();
             var ecb = _endSimulationEcbSystem.CreateCommandBuffer().AsParallelWriter();
             var positionMap = GetComponentDataFromEntity<TransformData>(true);
 
@@ -49,10 +59,12 @@ namespace Triniti.Flock
                         var memberSortData = new NativeArray<MemberSortData>(groupMembers.Length, Allocator.Temp);
                         for (int i = 0; i < groupMembers.Length; i++)
                         {
+                            var memberPosition = positionMap[groupMembers[i]].Position;
                             memberSortData[i] = new MemberSortData
                             {
                                 Entity = groupMembers[i],
-                                Position = math.mul(worldToLocalMatrix, new float3(positionMap[groupMembers[i]].Position, 1)).xy
+                                Position = math.mul(worldToLocalMatrix, new float3(memberPosition, 1)).xy,
+                                Distance = math.distancesq(memberPosition, groupMoveData.Destination)
                             };
                         }
 

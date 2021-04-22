@@ -14,8 +14,8 @@ namespace Triniti.Flock
         {
             public int Compare(float2 a, float2 b)
             {
-                var valueA = (a.y) * 16 + a.x * 256;
-                var valueB = (b.y) * 16 + b.x * 256;
+                var valueA = -(a.x)   + a.y * 10;
+                var valueB = -(b.x)  + b.y * 10;
                 return (int) math.round(valueB - valueA);
             }
         }
@@ -24,8 +24,8 @@ namespace Triniti.Flock
         {
             public int Compare(MemberSortData a, MemberSortData b)
             {
-                var valueA = (a.Position.y) * 16 + a.Position.x * 256;
-                var valueB = (b.Position.y) * 16 + b.Position.x * 256;
+                var valueA = -(a.Position.x)  + a.Position.y * 10;
+                var valueB = -(b.Position.x)  + b.Position.y * 10;
                 return (int) math.round(valueB - valueA);
             }
         }
@@ -55,22 +55,20 @@ namespace Triniti.Flock
 
         public static NativeArray<float2> GetDefaultFormationSlots() => _formationCache?[0] ?? new NativeArray<float2>();
 
-        //axis-x is the forward direction
         private static void _BuildDefaultFormation()
         {
-            //每排6个人
-            int2 grid = new int2(2, 6);
+            int2 grid = new int2(7, 4);
             float2 padding = new float2(2, 2);
             var offset = 0.5f * padding * (grid - 1);
             int index = 0;
             var positionSlots = new NativeArray<float2>(grid.x * grid.y, Allocator.Persistent);
-            for (int row = 0; row < grid.x; row++)
+            for (int row = 0; row < grid.y; row++)
             {
-                for (int column = 0; column < grid.y; column++)
+                for (int column = 0; column < grid.x; column++)
                 {
-                    var curIndex = new int2(row, column);
+                    var curIndex = new int2(column, row);
                     var position = curIndex * padding - offset;
-                    positionSlots[row * grid.y + column] = position;
+                    positionSlots[row * grid.x + column] = position;
                 }
             }
 
