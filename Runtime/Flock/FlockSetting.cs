@@ -10,7 +10,7 @@
         public FlockSetting(float cellRadius = 10)
         {
             CellRadius = cellRadius;
-            SeparationWeight = 0.1f;
+            SeparationWeight = 0.005f;
             AlignmentWeight = 0;
             CohesionWeight = 0;
         }

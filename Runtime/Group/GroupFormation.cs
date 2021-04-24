@@ -14,8 +14,8 @@ namespace Triniti.Flock
         {
             public int Compare(float2 a, float2 b)
             {
-                var valueA = -(a.x)   + a.y * 10;
-                var valueB = -(b.x)  + b.y * 10;
+                var valueA = -math.abs(a.x) + a.y*64 ;
+                var valueB = -math.abs(b.x) + b.y*64 ;
                 return (int) math.round(valueB - valueA);
             }
         }
@@ -24,8 +24,9 @@ namespace Triniti.Flock
         {
             public int Compare(MemberSortData a, MemberSortData b)
             {
-                var valueA = -(a.Position.x)  + a.Position.y * 10;
-                var valueB = -(b.Position.x)  + b.Position.y * 10;
+                return (int) ((b.LocalPosition.y - a.LocalPosition.y) * 100);
+                var valueA = (-(a.LocalPosition.x) + a.LocalPosition.y) * 100;
+                var valueB = (-(b.LocalPosition.x) + b.LocalPosition.y) * 100;
                 return (int) math.round(valueB - valueA);
             }
         }
