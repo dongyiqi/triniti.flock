@@ -17,9 +17,7 @@
 */
 namespace Triniti.Flock
 {
-    /// <summary>
-    /// 
-    /// </summary>
+    //TODO:use unity jobs and native collection to optimize
     public sealed class HungarianAlgorithm
     {
         private readonly int[,] _costMatrix;

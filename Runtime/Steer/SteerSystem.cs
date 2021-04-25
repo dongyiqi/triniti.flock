@@ -8,7 +8,7 @@ namespace Triniti.Flock
     public struct TransformData : IComponentData
     {
         public float2 Position;
-        
+        public float2 Forward;
     }
     public struct SteerData : IComponentData
     {

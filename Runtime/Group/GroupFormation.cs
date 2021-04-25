@@ -14,8 +14,8 @@ namespace Triniti.Flock
         {
             public int Compare(float2 a, float2 b)
             {
-                var valueA = -math.abs(a.x) + a.y*64 ;
-                var valueB = -math.abs(b.x) + b.y*64 ;
+                var valueA = (-math.abs(a.x) + a.y*64) ;
+                var valueB = (-math.abs(b.x) + b.y*64) ;
                 return (int) math.round(valueB - valueA);
             }
         }

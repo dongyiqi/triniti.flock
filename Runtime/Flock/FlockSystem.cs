@@ -71,17 +71,17 @@ namespace Triniti.Flock
                     var velocity = steerData.Velocity + combinedSteering;
                     velocity = math.normalizesafe(velocity) * math.min(math.length(velocity), steerData.MaxSpeed);
                     transformData.Position += velocity * deltaTime;
+                    transformData.Forward = math.normalizesafe(velocity);
                     steerData.Velocity = velocity;
                     steerData.DebugSpeed = math.length(steerData.Velocity);
                 }).ScheduleParallel(flockJobBarrier);
 
             var syncLocalToWorldJob = Entities.WithName("SyncLocalToWorldJob").ForEach(
-                (ref LocalToWorld localToWorld, in SteerData steerData, in TransformData transformData) =>
+                (ref LocalToWorld localToWorld, in TransformData transformData) =>
                 {
                     //TODO:use forward in stransformdata instead of steerData
                     var position = new float3(transformData.Position.x, 0, transformData.Position.y);
-                    var rotation = quaternion.LookRotationSafe(new float3(steerData.Velocity.x, 0, steerData.Velocity.y),
-                        math.up());
+                    var rotation = quaternion.LookRotationSafe(new float3(transformData.Forward.x, 0, transformData.Forward.y), math.up());
                     localToWorld.Value = float4x4.TRS(position, rotation, new float3(1, 1, 1));
                 }).ScheduleParallel(driveJobHandle);
 

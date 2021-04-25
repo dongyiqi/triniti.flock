@@ -4,6 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace Triniti.Flock.Test
 {
@@ -29,6 +30,8 @@ namespace Triniti.Flock.Test
             _groupEntity = entityManager.CreateEntity();
             entityManager.SetName(_groupEntity, "GroupEntity");
             entityManager.AddComponent<GroupFlag>(_groupEntity);
+            entityManager.AddComponent<TransformData>(_groupEntity);
+
             var memberList = ecb.AddBuffer<GroupMemberElement>(_groupEntity);
             var convertSetting = new GameObjectConversionSettings
             {
@@ -42,6 +45,7 @@ namespace Triniti.Flock.Test
                 var flockEntity = GameObjectConversionUtility.ConvertGameObjectHierarchy(FlockEntityPrefab, convertSetting);
                 entityManager.SetName(flockEntity, $"FlockEntity:{i}");
                 var spawnPosition = formationSlots[i];
+                //spawnPosition = new float2(Random.Range(-10, 10), Random.Range(-10, 10));
                 entityManager.SetComponentData(flockEntity, new TransformData {Position = spawnPosition});
                 entityManager.SetComponentData(flockEntity, new SteerArriveData {Goal = spawnPosition, ArriveRadius = 1});
                 //entityManager.SetComponentData(flockEntity, new Translation {Value = new float3(spawnPosition.x, 0, spawnPosition.y)});
@@ -65,7 +69,7 @@ namespace Triniti.Flock.Test
             foreach (var slot in formationSlots)
             {
                 var position = math.mul(localToWorld, new float3(slot, 1));
-                Gizmos.color = new Color(0, 0, 1 - index / (float) formationSlots.Length);
+                Gizmos.color = new Color(1 - index / (float) formationSlots.Length, 0, 0);
                 index++;
                 Gizmos.DrawSphere(new Vector3(position.x, 0, position.y), 0.1f);
             }
@@ -74,6 +78,17 @@ namespace Triniti.Flock.Test
             Gizmos.DrawWireSphere(new Vector3(_curDestination.x, 0, _curDestination.y), 0.5f);
             Gizmos.DrawLine(new Vector3(_curDestination.x, 0, _curDestination.y),
                 new Vector3(_curDestination.x, 0, _curDestination.y) + new Vector3(_curForward.x, 0, _curForward.y));
+
+            //draw move line
+            var world = World.DefaultGameObjectInjectionWorld;
+            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+            var members = entityManager.GetBuffer<GroupMemberElement>(_groupEntity);
+            foreach (var member in members)
+            {
+                var position = entityManager.GetComponentData<TransformData>(member).Position;
+                var destination = entityManager.GetComponentData<SteerArriveData>(member).Goal;
+                Gizmos.DrawLine(new Vector3(position.x, 0, position.y), new Vector3(destination.x, 0, destination.y));
+            }
         }
 
         private float2 _curDestination;
@@ -88,6 +103,7 @@ namespace Triniti.Flock.Test
                 if (Physics.Raycast(ray, out var hit))
                 {
                     var position = new float2(hit.point.x, hit.point.z);
+                    //position = new float2(1,2);
                     var world = World.DefaultGameObjectInjectionWorld;
                     var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
                     _curForward = math.normalizesafe(position - _curDestination);
