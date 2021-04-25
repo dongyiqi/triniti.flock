@@ -14,8 +14,8 @@ namespace Triniti.Flock
         {
             public int Compare(float2 a, float2 b)
             {
-                var valueA = (-math.abs(a.x) + a.y*64) ;
-                var valueB = (-math.abs(b.x) + b.y*64) ;
+                var valueA = (-math.abs(a.x) + a.y * 64);
+                var valueB = (-math.abs(b.x) + b.y * 64);
                 return (int) math.round(valueB - valueA);
             }
         }
@@ -54,7 +54,12 @@ namespace Triniti.Flock
             _formationCache.Clear();
         }
 
-        public static NativeArray<float2> GetDefaultFormationSlots() => _formationCache?[0] ?? new NativeArray<float2>();
+        public static NativeArray<float2> GetDefaultFormationSlots()
+        {
+            if (_formationCache != null && _formationCache.ContainsKey(0))
+                return _formationCache[0];
+            return new NativeArray<float2>();
+        }
 
         private static void _BuildDefaultFormation()
         {

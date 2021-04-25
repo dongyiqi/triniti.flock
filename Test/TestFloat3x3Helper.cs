@@ -49,24 +49,25 @@ namespace Triniti.Flock.Test
             }
 
             testNativeArray2D.Dispose();
-            return;
 
-            testNativeArray2D.Dispose();
-            var input = new int[3, 3];
-            input[0, 0] = 0;
-            input[0, 1] = 2;
-            input[0, 2] = 3;
-
-            input[1, 0] = 2;
-            input[1, 1] = 3;
-            input[1, 2] = 0;
-
-            input[2, 0] = 2;
-            input[2, 1] = 0;
-            input[2, 2] = 3;
-            var a = new HungarianAlgorithm(input);
-            var result = a.Run();
-            Debug.Log(result);
+            // testNativeArray2D.Dispose();
+            // var input = new NativeArray2D<int>(new int2(3, 3), Allocator.Temp);
+            // input[0, 0] = 0;
+            // input[0, 1] = 2;
+            // input[0, 2] = 3;
+            //
+            // input[1, 0] = 2;
+            // input[1, 1] = 3;
+            // input[1, 2] = 0;
+            //
+            // input[2, 0] = 2;
+            // input[2, 1] = 0;
+            // input[2, 2] = 3;
+            // var a = new HungarianAlgorithm(input);
+            // var result = a.Run();
+            // input.Dispose();
+            // result.Dispose();
+            // Debug.Log(result);
         }
     }
 }

@@ -74,7 +74,7 @@ namespace Triniti.Flock
                         destinationList.Add(formation[i]);
                     }
 
-                    var destinationMatrix = new int[groupMembers.Length, groupMembers.Length];
+                    var destinationMatrix = new NativeArray2D<int>(new int2(groupMembers.Length, groupMembers.Length), Allocator.Temp);
                     for (int memberIndex = 0; memberIndex < groupMembers.Length; memberIndex++)
                     {
                         for (int destinationIndex = 0; destinationIndex < groupMembers.Length; destinationIndex++)
@@ -86,8 +86,13 @@ namespace Triniti.Flock
                         }
                     }
 
-                    var bestMatchResult = new HungarianAlgorithm(destinationMatrix).Run();
-
+                    var bestMatchResult = new NativeArray<int>(groupMembers.Length, Allocator.Temp);
+                    new HungarianAlgorithm
+                    {
+                        CostMatrix = destinationMatrix,
+                        MatchX = bestMatchResult,
+                    }.Run();
+                    destinationMatrix.Dispose();
                     for (int i = 0; i < groupMembers.Length; i++)
                     {
                         ecb.SetComponent(entityInQueryIndex, groupMembers[i], new SteerArriveData
@@ -97,6 +102,7 @@ namespace Triniti.Flock
                         });
                     }
 
+                    bestMatchResult.Dispose();
                     destinationArray.Dispose();
                     //memberSortData.Dispose();
                     ecb.RemoveComponent<GroupMoveData>(entityInQueryIndex, entity);

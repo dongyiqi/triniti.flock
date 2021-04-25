@@ -8,8 +8,7 @@ using Unity.Mathematics;
 
 namespace Triniti.Flock
 {
-    public struct NativeArray2D<T> : IDisposable, IEnumerable<T>, IEnumerable, IEquatable<NativeArray<T>>
-        where T : struct
+    public struct NativeArray2D<T> : IDisposable, IEnumerable<T>, IEnumerable, IEquatable<NativeArray2D<T>> where T : struct
     {
         private NativeArray<T> _array;
 
@@ -17,6 +16,7 @@ namespace Triniti.Flock
         public bool IsCreated => _array.IsCreated;
         public int Length => _array.Length;
 
+        public int2 Length2D => _dimension;
         //row order
         public NativeArray2D(int2 dimension, Allocator allocator)
         {
@@ -42,9 +42,6 @@ namespace Triniti.Flock
 
         IEnumerator IEnumerable.GetEnumerator() => (IEnumerator) _array.GetEnumerator();
 
-        public bool Equals(NativeArray<T> other)
-        {
-            throw new NotImplementedException();
-        }
+        public bool Equals(NativeArray2D<T> other) => this._array.Equals(other._array);
     }
 }
