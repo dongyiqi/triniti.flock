@@ -31,12 +31,17 @@ namespace Triniti.Flock
         {
             var memberSorter = GroupFormation.FormationMemberSortInstance;
             var ecb = _endSimulationEcbSystem.CreateCommandBuffer().AsParallelWriter();
-            var positionMap = GetComponentDataFromEntity<TransformData>();
+            var transformDataMap = GetComponentDataFromEntity<TransformData>(true);
+            var steerArriveDataMap = GetComponentDataFromEntity<SteerArriveData>(true);
+            //keep formation
+            //method 1 use average as group centroid of the formation pivot
+            //method 2 use a logic group entity with transform data & steer and find path on  this group logic 
 
             #region group average position & forward
 
-            // Entities.WithNativeDisableParallelForRestriction(positionMap).ForEach(
-            //     (Entity entity, ref TransformData transformData, in DynamicBuffer<GroupMemberElement> groupMembers) =>
+            // Entities.WithNativeDisableParallelForRestriction(positionMap).WithNativeDisableContainerSafetyRestriction(positionMap)
+            //     .WithReadOnly(positionMap)
+            //     .ForEach((Entity entity, ref TransformData transformData, in DynamicBuffer<GroupMemberElement> groupMembers) =>
             //     {
             //         if (groupMembers.Length == 0) return;
             //
@@ -50,16 +55,55 @@ namespace Triniti.Flock
             //         }
             //
             //         transformData.Position = sumPosition / groupMembers.Length;
-            //         transformData.Forward = sumForward / groupMembers.Length;
+            //         transformData.Forward = math.normalize(sumForward / groupMembers.Length);
             //     }).ScheduleParallel();
+
+            #endregion
+
+            #region keep formation ASAP
+
+            //temp solution without fully optimized
+            Entities.WithReadOnly(transformDataMap).WithReadOnly(steerArriveDataMap).WithAll<GroupFlag>().ForEach(
+                (int entityInQueryIndex, in DynamicBuffer<GroupMemberElement> groupMembers) =>
+                {
+                    var sumDistance = 0f;
+                    NativeArray<float> distanceToGoalArray = new NativeArray<float>(groupMembers.Length, Allocator.Temp);
+
+                    for (var index = 0; index < groupMembers.Length; index++)
+                    {
+                        var member = groupMembers[index];
+                        if (!steerArriveDataMap.HasComponent(member.Value))
+                            return;
+                        var distance = math.distance(steerArriveDataMap[member.Value].Goal, transformDataMap[member.Value].Position);
+                        sumDistance += distance;
+                        distanceToGoalArray[index] = distance;
+                    }
+
+                    //5 1.5rate?
+                    var averageDistance = sumDistance / groupMembers.Length;
+                    for (var index = 0; index < groupMembers.Length; index++)
+                    {
+                        var distanceToAverage = distanceToGoalArray[index] - averageDistance;
+                        var rate = 1 + math.clamp(2f * distanceToAverage, -0.9f, 1.9f);
+                        ecb.SetComponent(entityInQueryIndex, groupMembers[index].Value, new SteerKeepFormation
+                        {
+                            MaxSpeedRate = rate
+                        });
+                    }
+
+                    distanceToGoalArray.Dispose();
+                }).ScheduleParallel();
 
             #endregion
 
             #region simple group move formation algorithm reference from https: //www.gdcvault.com/play/1020832/The-Simplest-AI-Trick-in
 
-            var seed = UnityEngine.Time.realtimeSinceStartup;
+            //hack use queue disable parallel restriction for now
+            //TODO: process each move command on a single group in a job other than entities.foreach  parallel running
+            var queue = new NativeQueue<int>(Allocator.TempJob);
             var formation = GroupFormation.GetDefaultFormationSlots();
-            Entities.WithName("GroupStartMoveJob").WithoutBurst().WithReadOnly(positionMap).WithReadOnly(formation).WithAll<GroupFlag>()
+            Entities.WithName("GroupStartMoveJob").WithNativeDisableParallelForRestriction(queue)
+                .WithReadOnly(transformDataMap).WithReadOnly(formation).WithAll<GroupFlag>()
                 .ForEach((Entity entity, int entityInQueryIndex, ref DynamicBuffer<GroupMemberElement> groupMembers,
                     in GroupMoveData groupMoveData) =>
                 {
@@ -79,7 +123,7 @@ namespace Triniti.Flock
                     {
                         for (int destinationIndex = 0; destinationIndex < groupMembers.Length; destinationIndex++)
                         {
-                            var memberPosition = positionMap[groupMembers[memberIndex]].Position;
+                            var memberPosition = transformDataMap[groupMembers[memberIndex]].Position;
                             var destinationPosition = destinationArray[destinationIndex];
                             destinationMatrix[memberIndex, destinationIndex] =
                                 (int) (math.distancesq(memberPosition, destinationPosition) * 10);
@@ -91,11 +135,12 @@ namespace Triniti.Flock
                     {
                         CostMatrix = destinationMatrix,
                         MatchX = bestMatchResult,
+                        Queue = queue,
                     }.Run();
                     destinationMatrix.Dispose();
                     for (int i = 0; i < groupMembers.Length; i++)
                     {
-                        ecb.SetComponent(entityInQueryIndex, groupMembers[i], new SteerArriveData
+                        ecb.AddComponent(entityInQueryIndex, groupMembers[i], new SteerArriveData
                         {
                             Goal = destinationArray[bestMatchResult[i]],
                             ArriveRadius = 0.5f,
@@ -111,7 +156,7 @@ namespace Triniti.Flock
 
             #endregion
 
-
+            queue.Dispose(Dependency);
             _endSimulationEcbSystem.AddJobHandleForProducer(Dependency);
         }
     }

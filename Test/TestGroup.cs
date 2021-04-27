@@ -12,6 +12,7 @@ namespace Triniti.Flock.Test
     {
         public GameObject FlockEntityPrefab;
         public int MemberCount = 25;
+        public bool EnableMove;
 
         private Entity _groupEntity;
 
@@ -47,12 +48,11 @@ namespace Triniti.Flock.Test
                 var spawnPosition = formationSlots[i];
                 //spawnPosition = new float2(Random.Range(-10, 10), Random.Range(-10, 10));
                 entityManager.SetComponentData(flockEntity, new TransformData {Position = spawnPosition});
-                entityManager.SetComponentData(flockEntity, new SteerArriveData {Goal = spawnPosition, ArriveRadius = 1});
-                //entityManager.SetComponentData(flockEntity, new Translation {Value = new float3(spawnPosition.x, 0, spawnPosition.y)});
-                //entityManager.SetComponentData(flockEntity, new Rotation {Value = transform.rotation});
+                //entityManager.SetComponentData(flockEntity, new SteerArriveData {Goal = spawnPosition, ArriveRadius = 1});
                 entityManager.RemoveComponent<Prefab>(flockEntity);
                 entityManager.RemoveComponent<LinkedEntityGroup>(flockEntity);
-                //entityManager.SetComponentData(flockEntity, new world);
+                entityManager.AddComponentData(flockEntity, new GroupOwner {GroupEntity = _groupEntity});
+                entityManager.AddComponentData(flockEntity, new SteerKeepFormation {MaxSpeedRate = 1});
                 memberList.Add(flockEntity);
             }
 
@@ -85,6 +85,7 @@ namespace Triniti.Flock.Test
             var members = entityManager.GetBuffer<GroupMemberElement>(_groupEntity);
             foreach (var member in members)
             {
+                if (!entityManager.HasComponent<SteerArriveData>(member)) continue;
                 var position = entityManager.GetComponentData<TransformData>(member).Position;
                 var destination = entityManager.GetComponentData<SteerArriveData>(member).Goal;
                 Gizmos.DrawLine(new Vector3(position.x, 0, position.y), new Vector3(destination.x, 0, destination.y));
@@ -96,7 +97,7 @@ namespace Triniti.Flock.Test
 
         private void Update()
         {
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonDown(0) && EnableMove)
             {
                 var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                 //射线碰到了物体

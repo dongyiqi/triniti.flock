@@ -21,14 +21,15 @@ using Unity.Jobs;
 namespace Triniti.Flock
 {
     //TODO:use unity jobs and native collection to optimize
-    public struct HungarianAlgorithm 
+    public struct HungarianAlgorithm
     {
         //input
-        public  NativeArray2D<int> CostMatrix;
+        public NativeArray2D<int> CostMatrix;
 
+        public NativeQueue<int> Queue;
         //output
         public NativeArray<int> MatchX;
-
+        
         private int _n; //number of elements
         private int _maxMatch;
         private NativeArray<int> _lx; //labels for workers //minimal value in row
@@ -94,14 +95,13 @@ namespace Triniti.Flock
             _maxMatch = 0;
 
             InitialMatching();
-
-            var q = new Queue<int>();
+            //var Queue = Queue;//new NativeQueue<int>(Allocator.Temp);
 
             #region augment
 
             while (_maxMatch != _n)
             {
-                q.Clear();
+                Queue.Clear();
 
                 InitSt();
                 //Array.Clear(S,0,n);
@@ -117,7 +117,7 @@ namespace Triniti.Flock
                 for (x = 0; x < _n; x++)
                 {
                     if (MatchX[x] != -1) continue;
-                    q.Enqueue(x);
+                    Queue.Enqueue(x);
                     root = x;
                     _prev[x] = -2;
 
@@ -135,16 +135,16 @@ namespace Triniti.Flock
                 //finding augmenting path
                 while (true)
                 {
-                    while (q.Count != 0)
+                    while (Queue.Count != 0)
                     {
-                        x = q.Dequeue();
+                        x = Queue.Dequeue();
                         var lxx = _lx[x];
                         for (y = 0; y < _n; y++)
                         {
                             if (CostMatrix[x, y] != lxx + _ly[y] || _t[y]) continue;
                             if (_matchY[y] == -1) break; //augmenting path found!
                             _t[y] = true;
-                            q.Enqueue(_matchY[y]);
+                            Queue.Enqueue(_matchY[y]);
 
                             AddToTree(_matchY[y], x);
                         }
@@ -171,7 +171,7 @@ namespace Triniti.Flock
 
                         _t[y] = true;
                         if (_s[_matchY[y]]) continue;
-                        q.Enqueue(_matchY[y]);
+                        Queue.Enqueue(_matchY[y]);
                         AddToTree(_matchY[y], _slackx[y]);
                     }
 

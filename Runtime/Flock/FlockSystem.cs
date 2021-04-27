@@ -57,7 +57,8 @@ namespace Triniti.Flock
             //drive
             var deltaTime = Time.DeltaTime;
             var driveJobHandle = Entities.WithName("DriveJob").ForEach(
-                (int entityInQueryIndex, ref TransformData transformData, ref SteerData steerData) =>
+                (int entityInQueryIndex, ref TransformData transformData, ref SteerData steerData,
+                    in SteerKeepFormation steerKeepFormation) =>
                 {
                     //steer is the normalized value and should not time weight(for arrive behaviour)
                     var combinedSteering = steerData.Steer;
@@ -69,7 +70,8 @@ namespace Triniti.Flock
                                        math.min(math.length(combinedSteering), steerData.MaxForce);
 
                     var velocity = steerData.Velocity + combinedSteering;
-                    velocity = math.normalizesafe(velocity) * math.min(math.length(velocity), steerData.MaxSpeed);
+                    velocity = math.normalizesafe(velocity) *
+                               math.min(math.length(velocity), steerData.MaxSpeed * steerKeepFormation.MaxSpeedRate);
                     transformData.Position += velocity * deltaTime;
                     transformData.Forward = math.normalizesafe(velocity);
                     steerData.Velocity = velocity;

@@ -34,16 +34,20 @@ namespace Triniti.Flock.Test
             {
                 //Position = new float2(position.x, position.y),
                 Velocity = math.forward(transform.rotation).xz * Math.Constants.EPSILON,
-                MaxSpeed = MaxSpeed,
                 MaxForce = MaxPower,
+                MaxSpeed = MaxSpeed,
+            });
+            dstManager.AddComponentData(entity, new SteerKeepFormation
+            {
+                MaxSpeedRate = 1,
             });
             dstManager.AddComponent<FlockNeighborsData>(entity);
 
-            dstManager.AddComponentData(entity, new SteerArriveData
-            {
-                Goal = new float2(position.x, position.z),
-                ArriveRadius = 1,
-            });
+            // dstManager.AddComponentData(entity, new SteerArriveData
+            // {
+            //     Goal = new float2(position.x, position.z),
+            //     ArriveRadius = 1,
+            // });
             dstManager.SetComponentData(entity, new LocalToWorld
             {
                 Value = float4x4.TRS(position, transform.rotation, new float3(1, 1, 1))

@@ -11,6 +11,10 @@ namespace Triniti.Flock
         public float2 Forward;
     }
 
+    public struct GroupOwner : IComponentData
+    {
+        public Entity GroupEntity;
+    }
     public struct GroupMemberElement : IBufferElementData
     {
         public static implicit operator Entity(GroupMemberElement e) => e.Value;

@@ -26,6 +26,12 @@ namespace Triniti.Flock
         public float DebugSpeed;
     }
 
+    public struct SteerKeepFormation : IComponentData
+    {
+        public float MaxSpeedRate;
+    }
+
+    //direct move
     public struct SteerArriveData : IComponentData
     {
         public float2 Goal;
@@ -41,7 +47,8 @@ namespace Triniti.Flock
             Entities.WithName("ClearSteeringJob").ForEach((ref SteerData flockSteerData) => { flockSteerData.Steer = float2.zero; })
                 .ScheduleParallel();
             var deltaTime = Time.DeltaTime;
-            Entities.WithName("SteerArriveJob").ForEach((ref SteerData flockSteerData, in SteerArriveData flockArriveData, in TransformData transformData) =>
+            
+            Entities.WithName("DirectSteerArriveJob").ForEach((ref SteerData flockSteerData, in SteerArriveData flockArriveData, in TransformData transformData) =>
             {
                 //TODO:add flow field path navigation by http://www.gameaipro.com/GameAIPro/GameAIPro_Chapter23_Crowd_Pathfinding_and_Steering_Using_Flow_Field_Tiles.pdf
                 //TODO:get desiredVelocity by goal or flow field navigation
@@ -65,6 +72,12 @@ namespace Triniti.Flock
 
                 //Debug.Log($"steer:{steer} len:{math.length(steer)} curSpeed:{math.length(flockSteerData.Velocity)}");
                 flockSteerData.Steer = steer;
+            }).ScheduleParallel();
+            
+            //steer with flow field
+            Entities.WithName("SteerArriveWithFlowFieldJob").ForEach((ref SteerData steerData, in TransformData transformData) =>
+            {
+
             }).ScheduleParallel();
         }
     }
