@@ -1,10 +1,7 @@
-using System;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Transforms;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace Triniti.Flock.Test
 {
@@ -16,6 +13,7 @@ namespace Triniti.Flock.Test
 
         private Entity _groupEntity;
 
+        //use constant speed
         private void Awake()
         {
             GroupFormation.Initialize();
@@ -23,8 +21,9 @@ namespace Triniti.Flock.Test
 
         private void Start()
         {
-            //create group
+            var flockData = FlockEntityPrefab.GetComponent<FlockEntityAuthor>();
 
+            //create group
             var world = World.DefaultGameObjectInjectionWorld;
             var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             var ecb = new EntityCommandBuffer(Allocator.Temp);
@@ -32,7 +31,12 @@ namespace Triniti.Flock.Test
             entityManager.SetName(_groupEntity, "GroupEntity");
             entityManager.AddComponent<GroupFlag>(_groupEntity);
             entityManager.AddComponent<TransformData>(_groupEntity);
-
+            entityManager.AddComponentData(_groupEntity, new SteerData
+            {
+                MaxSpeed = flockData.MaxSpeed,
+                MaxForce = flockData.MaxPower * 100,
+                MaxSpeedRate = 1,
+            });
             var memberList = ecb.AddBuffer<GroupMemberElement>(_groupEntity);
             var convertSetting = new GameObjectConversionSettings
             {
@@ -52,7 +56,7 @@ namespace Triniti.Flock.Test
                 entityManager.RemoveComponent<Prefab>(flockEntity);
                 entityManager.RemoveComponent<LinkedEntityGroup>(flockEntity);
                 entityManager.AddComponentData(flockEntity, new GroupOwner {GroupEntity = _groupEntity});
-                entityManager.AddComponentData(flockEntity, new SteerKeepFormation {MaxSpeedRate = 1});
+                entityManager.AddComponentData(flockEntity, new FormationLocalPosition {Value = formationSlots[i]});
                 memberList.Add(flockEntity);
             }
 
@@ -63,8 +67,22 @@ namespace Triniti.Flock.Test
         private void OnDrawGizmos()
         {
             var formationSlots = GroupFormation.GetDefaultFormationSlots();
-            var localToWorld = Math.TrsFloat3x3(_curDestination, _curForward);
             if (!formationSlots.IsCreated) return;
+
+            Gizmos.color = Color.yellow;
+            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+            if (_groupEntity != Entity.Null)
+            {
+                var transformData = entityManager.GetComponentData<TransformData>(_groupEntity);
+                var position = new Vector3(transformData.Position.x, 0, transformData.Position.y);
+                var forward = new Vector3(transformData.Forward.x, 0, transformData.Forward.y);
+                Gizmos.DrawWireSphere(position, 1);
+
+                Gizmos.DrawLine(position, position + forward);
+            }
+
+
+            var localToWorld = Math.TrsFloat3x3(_curDestination, _curForward);
             int index = 0;
             foreach (var slot in formationSlots)
             {
@@ -81,7 +99,6 @@ namespace Triniti.Flock.Test
 
             //draw move line
             var world = World.DefaultGameObjectInjectionWorld;
-            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             var members = entityManager.GetBuffer<GroupMemberElement>(_groupEntity);
             foreach (var member in members)
             {
@@ -103,21 +120,35 @@ namespace Triniti.Flock.Test
                 //射线碰到了物体
                 if (Physics.Raycast(ray, out var hit))
                 {
+                    float arriveRadius = 0.5f;
                     var position = new float2(hit.point.x, hit.point.z);
                     //position = new float2(1,2);
                     var world = World.DefaultGameObjectInjectionWorld;
                     var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-                    _curForward = math.normalizesafe(position - _curDestination);
+                    var groupPositionNow = entityManager.GetComponentData<TransformData>(_groupEntity).Position;
+                    _curForward = math.normalizesafe(position - groupPositionNow);
                     //_curForward = new float2(1, 0);
                     _curDestination = position;
                     entityManager.AddComponentData(_groupEntity, new GroupMoveData
                     {
                         Destination = _curDestination,
-                        Forward = _curForward
+                        Forward = _curForward,
+                        ArriveRadius = arriveRadius,
+                    });
+                    //make group to move
+                    entityManager.AddComponentData(_groupEntity, new SteerArriveData
+                    {
+                        Goal = position,
+                        ArriveRadius = arriveRadius,
                     });
                 }
             }
+
+            //move squad
         }
+
+        private float2 _position;
+        private float2 _forward;
 
         private void OnDestroy()
         {

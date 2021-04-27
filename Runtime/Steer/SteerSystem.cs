@@ -10,6 +10,7 @@ namespace Triniti.Flock
         public float2 Position;
         public float2 Forward;
     }
+
     public struct SteerData : IComponentData
     {
         //public float2 Position;
@@ -23,12 +24,8 @@ namespace Triniti.Flock
         public float MaxForce;
 
         public float MaxSpeed;
-        public float DebugSpeed;
-    }
-
-    public struct SteerKeepFormation : IComponentData
-    {
         public float MaxSpeedRate;
+        public float DebugSpeed;
     }
 
     //direct move
@@ -44,41 +41,42 @@ namespace Triniti.Flock
         protected override void OnUpdate()
         {
             //seek & arrive
-            Entities.WithName("ClearSteeringJob").ForEach((ref SteerData flockSteerData) => { flockSteerData.Steer = float2.zero; })
+            Entities.WithName("ClearSteeringJob").ForEach((ref SteerData steerData) => { steerData.Steer = float2.zero; })
                 .ScheduleParallel();
             var deltaTime = Time.DeltaTime;
-            
-            Entities.WithName("DirectSteerArriveJob").ForEach((ref SteerData flockSteerData, in SteerArriveData flockArriveData, in TransformData transformData) =>
-            {
-                //TODO:add flow field path navigation by http://www.gameaipro.com/GameAIPro/GameAIPro_Chapter23_Crowd_Pathfinding_and_Steering_Using_Flow_Field_Tiles.pdf
-                //TODO:get desiredVelocity by goal or flow field navigation
-                var distanceSq = math.lengthsq(flockArriveData.Goal - transformData.Position);
-                if (distanceSq < Math.Constants.EPSILON)
-                    return;
-                var steer = float2.zero;
-                var desiredVelocity = math.normalize(flockArriveData.Goal - transformData.Position) * flockSteerData.MaxSpeed;
-                var inArriveRange = distanceSq < flockArriveData.ArriveRadius * flockArriveData.ArriveRadius;
-                if (inArriveRange)
+
+            Entities.WithName("DirectSteerArriveJob").ForEach(
+                (ref SteerData steerData, in SteerArriveData steerArriveData, in TransformData transformData) =>
                 {
-                    desiredVelocity *= distanceSq / (flockArriveData.ArriveRadius * flockArriveData.ArriveRadius);
-                }
+                    //TODO:add flow field path navigation by http://www.gameaipro.com/GameAIPro/GameAIPro_Chapter23_Crowd_Pathfinding_and_Steering_Using_Flow_Field_Tiles.pdf
+                    //TODO:get desiredVelocity by goal or flow field navigation
+                    var distanceSq = math.lengthsq(steerArriveData.Goal - transformData.Position);
+                    if (distanceSq < Math.Constants.EPSILON)
+                    {
+                        return;
+                    }
 
-                steer = desiredVelocity - flockSteerData.Velocity;
-                //in arrive range do not multiply deltaTime so the agent could stop right on the destination
+                    var steer = float2.zero;
+                    var desiredVelocity = math.normalize(steerArriveData.Goal - transformData.Position) * steerData.MaxSpeed *
+                                          steerData.MaxSpeedRate;
+                    var inArriveRange = distanceSq < steerArriveData.ArriveRadius * steerArriveData.ArriveRadius;
+                    if (inArriveRange)
+                    {
+                        desiredVelocity *= distanceSq / (steerArriveData.ArriveRadius * steerArriveData.ArriveRadius);
+                    }
 
-                steer = math.normalizesafe(steer) *
-                        math.min(math.length(steer), flockSteerData.MaxForce * math.select(deltaTime, 1, inArriveRange));
+                    steer = desiredVelocity - steerData.Velocity;
+                    //in arrive range do not multiply deltaTime so the agent could stop right on the destination
+                    steer = math.normalizesafe(steer) *
+                            math.min(math.length(steer), steerData.MaxForce * math.select(deltaTime, 1, inArriveRange));
 
+                    //Debug.Log($"steer:{steer} len:{math.length(steer)} curSpeed:{math.length(flockSteerData.Velocity)}");
+                    steerData.Steer = steer;
+                }).ScheduleParallel();
 
-                //Debug.Log($"steer:{steer} len:{math.length(steer)} curSpeed:{math.length(flockSteerData.Velocity)}");
-                flockSteerData.Steer = steer;
-            }).ScheduleParallel();
-            
             //steer with flow field
-            Entities.WithName("SteerArriveWithFlowFieldJob").ForEach((ref SteerData steerData, in TransformData transformData) =>
-            {
-
-            }).ScheduleParallel();
+            Entities.WithName("SteerArriveWithFlowFieldJob").ForEach((ref SteerData steerData, in TransformData transformData) => { })
+                .ScheduleParallel();
         }
     }
 }

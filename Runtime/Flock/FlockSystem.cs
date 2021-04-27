@@ -56,38 +56,23 @@ namespace Triniti.Flock
 
             //drive
             var deltaTime = Time.DeltaTime;
-            var driveJobHandle = Entities.WithName("DriveJob").ForEach(
-                (int entityInQueryIndex, ref TransformData transformData, ref SteerData steerData,
-                    in SteerKeepFormation steerKeepFormation) =>
+            var flockSteerJobHandle = Entities.WithName("FlockSteerJob").WithAll<FlockEntityData>().ForEach(
+                (int entityInQueryIndex, ref TransformData transformData, ref SteerData steerData) =>
                 {
                     //steer is the normalized value and should not time weight(for arrive behaviour)
                     var combinedSteering = steerData.Steer;
                     combinedSteering += flockSetting.CohesionWeight * cohesionArray[entityInQueryIndex]
                                         + flockSetting.AlignmentWeight * alignmentArray[entityInQueryIndex]
                                         + flockSetting.SeparationWeight * separationArray[entityInQueryIndex];
+                    //combinedSteering = math.normalizesafe(combinedSteering) * math.min(math.length(combinedSteering), steerData.MaxForce);
 
-                    combinedSteering = math.normalizesafe(combinedSteering) *
-                                       math.min(math.length(combinedSteering), steerData.MaxForce);
-
-                    var velocity = steerData.Velocity + combinedSteering;
-                    velocity = math.normalizesafe(velocity) *
-                               math.min(math.length(velocity), steerData.MaxSpeed * steerKeepFormation.MaxSpeedRate);
-                    transformData.Position += velocity * deltaTime;
-                    transformData.Forward = math.normalizesafe(velocity);
-                    steerData.Velocity = velocity;
-                    steerData.DebugSpeed = math.length(steerData.Velocity);
+                    steerData.Steer = combinedSteering;
                 }).ScheduleParallel(flockJobBarrier);
 
-            var syncLocalToWorldJob = Entities.WithName("SyncLocalToWorldJob").ForEach(
-                (ref LocalToWorld localToWorld, in TransformData transformData) =>
-                {
-                    //TODO:use forward in stransformdata instead of steerData
-                    var position = new float3(transformData.Position.x, 0, transformData.Position.y);
-                    var rotation = quaternion.LookRotationSafe(new float3(transformData.Forward.x, 0, transformData.Forward.y), math.up());
-                    localToWorld.Value = float4x4.TRS(position, rotation, new float3(1, 1, 1));
-                }).ScheduleParallel(driveJobHandle);
+            //TODO:add in final commit job or system
 
-            Dependency = JobHandle.CombineDependencies(flockJobBarrier, syncLocalToWorldJob);
+
+            Dependency = JobHandle.CombineDependencies(flockJobBarrier, flockSteerJobHandle);
             var disposeJobHandle = cohesionArray.Dispose(Dependency);
             disposeJobHandle = alignmentArray.Dispose(disposeJobHandle);
             disposeJobHandle = separationArray.Dispose(disposeJobHandle);

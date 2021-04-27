@@ -36,9 +36,6 @@ namespace Triniti.Flock.Test
                 Velocity = math.forward(transform.rotation).xz * Math.Constants.EPSILON,
                 MaxForce = MaxPower,
                 MaxSpeed = MaxSpeed,
-            });
-            dstManager.AddComponentData(entity, new SteerKeepFormation
-            {
                 MaxSpeedRate = 1,
             });
             dstManager.AddComponent<FlockNeighborsData>(entity);

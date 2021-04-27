@@ -9,12 +9,19 @@ namespace Triniti.Flock
     {
         public float2 Destination;
         public float2 Forward;
+        public float ArriveRadius;
+    }
+
+    public struct FormationLocalPosition : IComponentData
+    {
+        public float2 Value;
     }
 
     public struct GroupOwner : IComponentData
     {
         public Entity GroupEntity;
     }
+
     public struct GroupMemberElement : IBufferElementData
     {
         public static implicit operator Entity(GroupMemberElement e) => e.Value;
