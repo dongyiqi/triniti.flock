@@ -3,7 +3,6 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
 
 namespace Triniti.Flock
 {
@@ -23,11 +22,12 @@ namespace Triniti.Flock
             base.OnCreate();
             _flockEntityQuery = GetEntityQuery(
                 ComponentType.ReadWrite<LocalToWorld>(), ComponentType.ReadOnly<FlockEntityData>(),
-                ComponentType.ReadWrite<SteerData>(), ComponentType.ReadOnly<FlockNeighborsData>());
+                ComponentType.ReadWrite<SteerData>(), ComponentType.ReadOnly<NeighborsData>());
         }
 
         protected override void OnUpdate()
         {
+            return;
             var flockSetting = _flockSetting;
             var flockEntitiesCount = _flockEntityQuery.CalculateEntityCount();
             var cohesionArray = new NativeArray<float2>(flockEntitiesCount, Allocator.TempJob);
@@ -36,7 +36,7 @@ namespace Triniti.Flock
             //var steerArray = new NativeArray<float2>(flockEntitiesCount, Allocator.TempJob);
             //flock
             var flockJobHandle = Entities.WithName("CohesionJob").WithAll<FlockEntityData>().ForEach(
-                    (int entityInQueryIndex, in FlockNeighborsData flockNeighborsData, in TransformData transformData,
+                    (int entityInQueryIndex, in NeighborsData flockNeighborsData, in TransformData transformData,
                         in SteerData flockNavigationData) =>
                     {
                         if (flockNeighborsData.NeighborCount > 0)

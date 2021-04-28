@@ -4,16 +4,7 @@ using Unity.Mathematics;
 
 namespace Triniti.Flock
 {
-    public struct MemberSortData
-    {
-        public Entity Entity;
-        public float2 LocalPosition;
-        public int MaxMatchDestinationIndex;
-        public float2 WorldPosition;
-        public float2 DestinationPosition;
-    }
-
-    [UpdateInGroup(typeof(FlockGroup)), UpdateAfter(typeof(SteerSystem))]
+    [UpdateInGroup(typeof(FlockGroup)), UpdateAfter(typeof(SteerSystem)), UpdateBefore(typeof(EndSteerSystem))]
     public class GroupMoveSystem : SystemBase
     {
         private EndSimulationEntityCommandBufferSystem _endSimulationEcbSystem;
@@ -30,72 +21,13 @@ namespace Triniti.Flock
         //TODO:update formation index by current members position and destination position
         protected override void OnUpdate()
         {
-            var memberSorter = GroupFormation.FormationMemberSortInstance;
+            //var memberSorter = GroupFormation.FormationMemberSortInstance;
             var ecb = _endSimulationEcbSystem.CreateCommandBuffer().AsParallelWriter();
             var transformDataMap = GetComponentDataFromEntity<TransformData>(true);
             var steerArriveDataMap = GetComponentDataFromEntity<SteerArriveData>(true);
             //keep formation
             //method 1 use average as group centroid of the formation pivot
-            //method 2 use a logic group entity with transform data & steer and find path on  this group logic 
-
-            #region group average position & forward
-
-            // Entities.WithNativeDisableParallelForRestriction(positionMap).WithNativeDisableContainerSafetyRestriction(positionMap)
-            //     .WithReadOnly(positionMap)
-            //     .ForEach((Entity entity, ref TransformData transformData, in DynamicBuffer<GroupMemberElement> groupMembers) =>
-            //     {
-            //         if (groupMembers.Length == 0) return;
-            //
-            //         var sumPosition = float2.zero;
-            //         var sumForward = float2.zero;
-            //         for (int i = 0; i < groupMembers.Length; i++)
-            //         {
-            //             var memberTransformData = positionMap[groupMembers[i]];
-            //             sumPosition += memberTransformData.Position;
-            //             sumForward += memberTransformData.Forward;
-            //         }
-            //
-            //         transformData.Position = sumPosition / groupMembers.Length;
-            //         transformData.Forward = math.normalize(sumForward / groupMembers.Length);
-            //     }).ScheduleParallel();
-
-            #endregion
-
-            #region keep formation ASAP
-
-            //temp solution without fully optimized
-            // Entities.WithReadOnly(transformDataMap).WithReadOnly(steerArriveDataMap).WithAll<GroupFlag>().ForEach(
-            //     (int entityInQueryIndex, in DynamicBuffer<GroupMemberElement> groupMembers) =>
-            //     {
-            //         var sumDistance = 0f;
-            //         NativeArray<float> distanceToGoalArray = new NativeArray<float>(groupMembers.Length, Allocator.Temp);
-            //
-            //         for (var index = 0; index < groupMembers.Length; index++)
-            //         {
-            //             var member = groupMembers[index];
-            //             if (!steerArriveDataMap.HasComponent(member.Value))
-            //                 return;
-            //             var distance = math.distance(steerArriveDataMap[member.Value].Goal, transformDataMap[member.Value].Position);
-            //             sumDistance += distance;
-            //             distanceToGoalArray[index] = distance;
-            //         }
-            //
-            //         //5 1.5rate?
-            //         var averageDistance = sumDistance / groupMembers.Length;
-            //         for (var index = 0; index < groupMembers.Length; index++)
-            //         {
-            //             var distanceToAverage = distanceToGoalArray[index] - averageDistance;
-            //             var rate = 1 + math.clamp(2f * distanceToAverage, -0.9f, 1.9f);
-            //             // ecb.SetComponent(entityInQueryIndex, groupMembers[index].Value, new SteerKeepFormation
-            //             // {
-            //             //     MaxSpeedRate = rate
-            //             // });
-            //         }
-            //
-            //         distanceToGoalArray.Dispose();
-            //     }).ScheduleParallel();
-
-            #endregion
+            //method 2 use a logic group entity with transform data & steer and find path on  this group logic
 
             #region simple group move formation algorithm reference from https: //www.gdcvault.com/play/1020832/The-Simplest-AI-Trick-in
 
@@ -106,7 +38,7 @@ namespace Triniti.Flock
             Entities.WithName("GroupStartMoveJob").WithNativeDisableParallelForRestriction(queue)
                 .WithReadOnly(transformDataMap).WithReadOnly(formationSlots).WithAll<GroupFlag>()
                 .ForEach((Entity entity, int entityInQueryIndex, ref DynamicBuffer<GroupMemberElement> groupMembers,
-                    in GroupMoveData groupMoveData) =>
+                    in GroupMoveEventData groupMoveData) =>
                 {
                     var localToWorldMatrix = Math.TrsFloat3x3(groupMoveData.Destination, groupMoveData.Forward);
                     var destinationArray = new NativeArray<float2>(groupMembers.Length, Allocator.Temp);
@@ -157,13 +89,15 @@ namespace Triniti.Flock
                     bestMatchResult.Dispose();
                     destinationArray.Dispose();
                     //memberSortData.Dispose();
-                    ecb.RemoveComponent<GroupMoveData>(entityInQueryIndex, entity);
+                    ecb.RemoveComponent<GroupMoveEventData>(entityInQueryIndex, entity);
                 })
                 .ScheduleParallel();
 
             #endregion
 
             queue.Dispose(Dependency);
+            _endSimulationEcbSystem.AddJobHandleForProducer(Dependency);
+            //return;
 
             #region keep formation add force on member to go to position in group(slot)
 
@@ -181,22 +115,26 @@ namespace Triniti.Flock
                     (ref SteerData steerData, in GroupOwner groupOwner, in TransformData transformData,
                         in FormationLocalPosition formationLocalPosition) =>
                     {
+                        var localToWorld = groupMatrixMap[groupOwner.GroupEntity];
                         var formationSlotWorldPosition =
-                            math.mul(groupMatrixMap[groupOwner.GroupEntity], new float3(formationLocalPosition.Value, 1)).xy;
+                            math.mul(localToWorld, new float3(formationLocalPosition.Value, 1)).xy;
                         var curPosition = transformData.Position;
-                        var weight = 0.5f;
-                        var desireVelocity = (formationSlotWorldPosition - curPosition) * steerData.MaxSpeed;
-                        desireVelocity = math.normalizesafe(desireVelocity) * math.min(math.length(desireVelocity), steerData.MaxSpeed *
-                            steerData.MaxSpeedRate);
+                        var weight = 1; //0.5f;
+                        var desireVelocity = (formationSlotWorldPosition - curPosition) * steerData.MaxSpeed * steerData.MaxSpeedRate;
+                        desireVelocity = math.normalizesafe(desireVelocity) *
+                                         math.min(math.length(desireVelocity), steerData.MaxSpeed * steerData.MaxSpeedRate);
+
                         var steer = (desireVelocity - steerData.Velocity) * deltaTime * weight;
                         steerData.Steer += steer;
-                        steerData.MaxSpeedRate = math.clamp(1 * math.distance(formationSlotWorldPosition, curPosition), 1, 1.2f);
+
+                        var positionInLocalFormation = math.mul(math.inverse(localToWorld), new float3(transformData.Position, 1)).xy;
+                        var offset = positionInLocalFormation - formationLocalPosition.Value;
+                        steerData.MaxSpeedRate = math.clamp(1 + (-offset.y + math.abs(offset.x)) * 1, 0.7f, 1.3f);
                     })
                 .ScheduleParallel();
 
             #endregion
 
-            _endSimulationEcbSystem.AddJobHandleForProducer(Dependency);
 
             groupMatrixMap.Dispose(Dependency);
         }

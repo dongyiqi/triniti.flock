@@ -10,19 +10,16 @@ namespace Triniti.Flock
         public float2 Position;
         public float2 Forward;
     }
-
+    public struct KeepDestinationForward : IComponentData{}
     public struct SteerData : IComponentData
     {
         //public float2 Position;
         //steer read only
         public float2 Velocity;
-
         ////Here steer means delta of velocity (= force/mass*deltaTime)
         public float2 Steer;
-
         //static  trust to weight ratio here means
         public float MaxForce;
-
         public float MaxSpeed;
         public float MaxSpeedRate;
         public float DebugSpeed;

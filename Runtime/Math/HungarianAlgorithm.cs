@@ -20,16 +20,16 @@ using Unity.Jobs;
 */
 namespace Triniti.Flock
 {
-    //TODO:use unity jobs and native collection to optimize
     public struct HungarianAlgorithm
     {
         //input
         public NativeArray2D<int> CostMatrix;
 
         public NativeQueue<int> Queue;
+
         //output
         public NativeArray<int> MatchX;
-        
+
         private int _n; //number of elements
         private int _maxMatch;
         private NativeArray<int> _lx; //labels for workers //minimal value in row

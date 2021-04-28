@@ -5,11 +5,10 @@ using Unity.Mathematics;
 
 namespace Triniti.Flock
 {
-    public struct GroupMoveData : IComponentData
+    //component data on member
+    public struct KeepFormationSteerWeight : IComponentData
     {
-        public float2 Destination;
-        public float2 Forward;
-        public float ArriveRadius;
+        public float Value;
     }
 
     public struct FormationLocalPosition : IComponentData
@@ -21,7 +20,13 @@ namespace Triniti.Flock
     {
         public Entity GroupEntity;
     }
-
+    
+    public struct GroupMoveEventData : IComponentData
+    {
+        public float2 Destination;
+        public float2 Forward;
+        public float ArriveRadius;
+    }
     public struct GroupMemberElement : IBufferElementData
     {
         public static implicit operator Entity(GroupMemberElement e) => e.Value;

@@ -29,12 +29,13 @@ namespace Triniti.Flock.Test
             var ecb = new EntityCommandBuffer(Allocator.Temp);
             _groupEntity = entityManager.CreateEntity();
             entityManager.SetName(_groupEntity, "GroupEntity");
+            entityManager.AddComponent<KeepDestinationForward>(_groupEntity);
             entityManager.AddComponent<GroupFlag>(_groupEntity);
             entityManager.AddComponent<TransformData>(_groupEntity);
             entityManager.AddComponentData(_groupEntity, new SteerData
             {
                 MaxSpeed = flockData.MaxSpeed,
-                MaxForce = flockData.MaxPower * 100,
+                MaxForce = flockData.MaxPower,
                 MaxSpeedRate = 1,
             });
             var memberList = ecb.AddBuffer<GroupMemberElement>(_groupEntity);
@@ -129,7 +130,7 @@ namespace Triniti.Flock.Test
                     _curForward = math.normalizesafe(position - groupPositionNow);
                     //_curForward = new float2(1, 0);
                     _curDestination = position;
-                    entityManager.AddComponentData(_groupEntity, new GroupMoveData
+                    entityManager.AddComponentData(_groupEntity, new GroupMoveEventData
                     {
                         Destination = _curDestination,
                         Forward = _curForward,

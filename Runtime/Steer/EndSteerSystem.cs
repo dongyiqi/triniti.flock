@@ -4,8 +4,8 @@ using Unity.Transforms;
 
 namespace Triniti.Flock
 {
-    [UpdateInGroup(typeof(FlockGroup)), UpdateAfter(typeof(FlockSystem))]
-    public class ApplySteerSystem : SystemBase
+    [UpdateInGroup(typeof(FlockGroup)), UpdateAfter(typeof(SteerSystem))]
+    public class EndSteerSystem : SystemBase
     {
         protected override void OnUpdate()
         {
@@ -18,9 +18,14 @@ namespace Triniti.Flock
                 transformData.Position += velocity * deltaTime;
                 transformData.Forward = math.normalizesafe(velocity);
                 steerData.Velocity = velocity;
+                
                 steerData.DebugSpeed = math.length(steerData.Velocity);
             }).ScheduleParallel();
-
+            Entities.WithName("KeepDestinationForward").WithAll<KeepDestinationForward>()
+                .ForEach((ref TransformData transformData, in SteerArriveData steerArriveData) =>
+                {
+                    transformData.Forward = math.normalizesafe(steerArriveData.Goal - transformData.Position);
+                }).ScheduleParallel();
             Entities.WithName("SyncLocalToWorldJob").ForEach((ref LocalToWorld localToWorld, in TransformData transformData) =>
             {
                 var position = new float3(transformData.Position.x, 0, transformData.Position.y);

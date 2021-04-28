@@ -1,4 +1,5 @@
 ﻿using System;
+using Unity.Mathematics;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -16,13 +17,12 @@ namespace Triniti.Flock.Test
             {
                 var position = new Vector3(Random.Range(-SpawnRange, SpawnRange), 0, Random.Range(-SpawnRange, SpawnRange));
                 var rotation = Quaternion.Euler(0, Random.Range(0, 360f), 0);
-                Instantiate(FlockEnity, position, rotation);
+                Instantiate(FlockEnity, transform.position + position, rotation);
             }
         }
 
         private void OnDrawGizmos()
         {
-            
         }
     }
 }

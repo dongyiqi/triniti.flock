@@ -20,23 +20,23 @@ namespace Triniti.Flock
             }
         }
 
-        public struct FormationMemberSort : IComparer<MemberSortData>
-        {
-            public int Compare(MemberSortData a, MemberSortData b)
-            {
-                return (int) ((b.LocalPosition.y - a.LocalPosition.y) * 100);
-                var valueA = (-(a.LocalPosition.x) + a.LocalPosition.y) * 100;
-                var valueB = (-(b.LocalPosition.x) + b.LocalPosition.y) * 100;
-                return (int) math.round(valueB - valueA);
-            }
-        }
+        // public struct FormationMemberSort : IComparer<MemberSortData>
+        // {
+        //     public int Compare(MemberSortData a, MemberSortData b)
+        //     {
+        //         return (int) ((b.LocalPosition.y - a.LocalPosition.y) * 100);
+        //         var valueA = (-(a.LocalPosition.x) + a.LocalPosition.y) * 100;
+        //         var valueB = (-(b.LocalPosition.x) + b.LocalPosition.y) * 100;
+        //         return (int) math.round(valueB - valueA);
+        //     }
+        // }
 
         //TODO:Managing coherent groups. Computer Animation and Virtual Worlds
         //refer to http://www.gameaipro.com/GameAIPro2/GameAIPro2_Chapter20_Hierarchical_Architecture_for_Group_Navigation_Behaviors.pdf
         //1.formation slots sort and sort member list the same way as sort slots and assign (i)th entity to the (i)th slot
         private static Dictionary<int, NativeArray<float2>> _formationCache;
         public static FormationPositionSort FormationPositionSortInstance = new FormationPositionSort();
-        public static FormationMemberSort FormationMemberSortInstance = new FormationMemberSort();
+        //public static FormationMemberSort FormationMemberSortInstance = new FormationMemberSort();
 
         public static void Initialize()
         {

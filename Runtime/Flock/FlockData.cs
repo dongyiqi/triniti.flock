@@ -7,16 +7,15 @@ namespace Triniti.Flock
     {
         //TODO:consider filter in FlockNeighborsData
         public byte Filter; //only check the same filter
-
         //static cohesion alignment
-        public float NeighborRadius;
-        public float SeparationRadius;
-
         //TODO：check if the separation radius is needed or not
     }
 
-    public struct FlockNeighborsData : IComponentData
+    public struct NeighborsData : IComponentData
     {
+        //imutable data 
+        public float NeighborRadius; //seems useless with our formation group system
+        public float SeparationRadius;
         //dynamic
         public float2 MeanPosition;
         public float2 MeanVelocity;

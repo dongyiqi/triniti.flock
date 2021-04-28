@@ -22,9 +22,7 @@ namespace Triniti.Flock.Test
             float3 position = transform.position;
             dstManager.AddComponentData(entity, new FlockEntityData
             {
-                SeparationRadius = SeparationRadius,
                 Filter = _filter,
-                NeighborRadius = NeighborRadius,
             });
             dstManager.AddComponentData(entity, new TransformData
             {
@@ -38,7 +36,11 @@ namespace Triniti.Flock.Test
                 MaxSpeed = MaxSpeed,
                 MaxSpeedRate = 1,
             });
-            dstManager.AddComponent<FlockNeighborsData>(entity);
+            dstManager.AddComponentData<NeighborsData>(entity, new NeighborsData
+            {
+                SeparationRadius = SeparationRadius,
+                NeighborRadius = NeighborRadius,
+            });
 
             // dstManager.AddComponentData(entity, new SteerArriveData
             // {
